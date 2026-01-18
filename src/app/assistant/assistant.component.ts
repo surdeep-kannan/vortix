@@ -15,7 +15,7 @@ export interface PaymentMethod {
 @Component({
   selector: 'app-assistant',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <!-- Floating Plugin Trigger -->
     <div class="plugin-trigger" *ngIf="!isOpen" (click)="togglePlugin()">
@@ -34,13 +34,54 @@ export interface PaymentMethod {
       </div>
       
       <div class="plugin-content">
-        <div class="analysis-text" *ngIf="scanning">
+        <!-- View 1: Onboarding -->
+        <div class="view-onboarding" *ngIf="currentView === 'onboarding'">
+          <div class="section-title">USER ONBOARDING</div>
+          <p class="onboarding-desc">Welcome to VORTIX. Let's setup your secure intelligence node.</p>
+          <div class="input-group">
+            <label>Full Name</label>
+            <input type="text" [(ngModel)]="userData.name" placeholder="John Doe">
+          </div>
+          <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" [(ngModel)]="userData.email" placeholder="john@example.com">
+          </div>
+          <button class="action-btn" (click)="goToCardEntry()">CONTINUE</button>
+        </div>
+
+        <!-- View 2: Card Entry -->
+        <div class="view-card-entry" *ngIf="currentView === 'cardEntry'">
+          <div class="section-title">SECURE TOKENIZATION</div>
+          <div class="rbi-notice">
+            <strong>RBI COMPLIANCE NOTICE:</strong>
+            VORTIX uses Card-on-File Tokenization (CoFT) for enhanced security. Your actual card details are never stored directly on merchants. We tokenize these via authorized networks to be stored in VORTIX Blockchain Ledger.
+          </div>
+          <div class="input-group">
+            <label>Card Number</label>
+            <input type="text" [(ngModel)]="cardInput.number" placeholder="XXXX XXXX XXXX XXXX">
+          </div>
+          <div class="row">
+            <div class="input-group">
+              <label>Expiry</label>
+              <input type="text" [(ngModel)]="cardInput.expiry" placeholder="MM/YY">
+            </div>
+            <div class="input-group">
+              <label>CVV</label>
+              <input type="password" [(ngModel)]="cardInput.cvv" placeholder="***">
+            </div>
+          </div>
+          <button class="action-btn" (click)="tokenizeAndSave()">TOKENIZE & SAVE</button>
+        </div>
+
+        <!-- View 3: Scanning -->
+        <div class="analysis-text" *ngIf="currentView === 'scanning'">
           <div class="scanner-line"></div>
-          Analyzing Network Nodes...
+          Analyzing Network Nodes for {{ userData.name.split(' ')[0] }}...
           <span class="blinking-cursor">|</span>
         </div>
 
-        <div class="recommendation" *ngIf="!scanning && recommendedCard">
+        <!-- View 4: Recommendation -->
+        <div class="recommendation" *ngIf="currentView === 'main' && recommendedCard">
           <div class="section-title">OPTIMAL ROUTE</div>
           <div class="card-item glow">
             <div class="card-icon">{{ recommendedCard.icon }}</div>
@@ -54,23 +95,23 @@ export interface PaymentMethod {
           </div>
 
           <div class="reason">
-             "{{ recommendedCard.name }} is the clear winner for this session. Low latency routing detected."
+             "Hello {{ userData.name.split(' ')[0] }}, your tokenized {{ recommendedCard.name }} is the clear winner for this session. Low latency routing detected."
           </div>
 
           <div class="comparison-view">
-            <div class="section-title">WALLET AUDIT</div>
-            <div class="comp-row" *ngFor="let card of mockCards" [class.active]="card.id === recommendedCard.id">
+            <div class="section-title">TOKENIZED VAULT</div>
+            <div class="comp-row active">
               <div class="comp-left">
-                <span class="dot" [ngClass]="getDotClass(card)"></span>
-                <span class="comp-name">{{ card.name }}</span>
+                <span class="dot green"></span>
+                <span class="comp-name">{{ recommendedCard.name }} ({{ recommendedCard.last4 }})</span>
               </div>
-              <span class="comp-balance">\${{ card.balance }}</span>
+              <span class="comp-balance">TOKENIZED</span>
             </div>
           </div>
 
           <div class="plugin-actions">
-            <button class="action-btn primary">SELECT OPTIMAL ROUTE</button>
-            <div class="action-hint">Click to confirm selection in PayPal</div>
+            <button class="action-btn primary">PAY VIA TOKENIZED GATEWAY</button>
+            <div class="action-hint">One-click secure checkout active</div>
           </div>
         </div>
       </div>
@@ -130,11 +171,20 @@ export interface PaymentMethod {
     .close-btn { background: none; border: none; color: #666; font-size: 24px; cursor: pointer; transition: color 0.2s; }
     .close-btn:hover { color: #fff; }
 
-    .plugin-content { flex: 1; overflow-y: auto; padding: 24px; }
+    .plugin-content { flex: 1; overflow-y: auto; padding: 24px; color: #e0e0e0; display: flex; flex-direction: column; }
     
-    .section-title { font-size: 10px; font-weight: 700; color: #00f2fe; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; }
+    .section-title { font-size: 10px; font-weight: 700; color: #00f2fe; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
 
-    .orb { width: 14px; height: 14px; background: radial-gradient(circle at 30% 30%, #4facfe, #00f2fe); border-radius: 50%; box-shadow: 0 0 10px #00f2fe; animation: pulse 2s infinite; }
+    .onboarding-desc { font-size: 13px; color: #94a3b8; line-height: 1.5; margin-bottom: 24px; }
+    .input-group { margin-bottom: 16px; width: 100%; }
+    .input-group label { display: block; font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase; }
+    .input-group input { width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; font-size: 14px; box-sizing: border-box; }
+    .input-group input:focus { outline: none; border-color: #00f2fe; background: rgba(0, 242, 254, 0.05); }
+
+    .rbi-notice { font-size: 10px; color: #f0ad4e; background: rgba(240, 173, 78, 0.1); border-left: 2px solid #f0ad4e; padding: 12px; border-radius: 4px; margin-bottom: 20px; line-height: 1.4; }
+    .row { display: flex; gap: 12px; }
+
+    .orb { width: 14px; height: 14px; background: radial-gradient(circle at 30% 30%, #4facfe, #00f2fe); border-radius: 50%; box-shadow: 0 0 10px #00f2fe; animation: pulse 2s infinite; flex-shrink: 0; }
     .orb.mini { width: 10px; height: 10px; }
     @keyframes pulse { 0% { box-shadow: 0 0 5px #00f2fe; scale: 1; } 50% { box-shadow: 0 0 15px #00f2fe; scale: 1.1; } 100% { box-shadow: 0 0 5px #00f2fe; scale: 1; } }
 
@@ -161,8 +211,9 @@ export interface PaymentMethod {
 
     .plugin-actions { margin-top: auto; }
     .action-btn { width: 100%; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; }
-    .action-btn.primary { background: #00f2fe; color: #000; box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3); }
     .action-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .action-btn.primary { background: #00f2fe; color: #000; box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3); }
+    .action-btn { background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); }
     .action-hint { font-size: 10px; color: #475569; text-align: center; margin-top: 8px; }
 
     .plugin-footer { padding: 20px; text-align: center; font-size: 9px; color: #334155; border-top: 1px solid rgba(255, 255, 255, 0.03); letter-spacing: 2px; }
@@ -179,41 +230,73 @@ export class AssistantComponent implements OnInit {
   @Output() autoPayTriggered = new EventEmitter<PaymentMethod>();
 
   isOpen = false;
-  scanning = true;
-  recommendedCard: PaymentMethod | null = null;
-  transactionAmount = 10.00; // Hardcoded for this demo
+  currentView: 'onboarding' | 'cardEntry' | 'scanning' | 'main' = 'onboarding';
 
-  // Mock Data from User Image
-  mockCards: PaymentMethod[] = [
-    { id: 'pp', name: 'PayPal Balance', last4: 'BAL', icon: 'PP', trafficLevel: 'High', successRate: 0, balance: 5000.00, status: 'Insufficient Funds' },
-    { id: 'c3', name: 'Credit Union 1', last4: '8328', icon: 'BANK', trafficLevel: 'High', successRate: 45, balance: 10.00, status: 'Congested' },
-    { id: 'c4', name: 'Amex', last4: '6753', icon: 'AMEX', trafficLevel: 'Medium', successRate: 92, balance: 500.00, status: 'Stable' },
-    { id: 'c1', name: 'Visa', last4: '4550', icon: 'VISA', trafficLevel: 'Low', successRate: 99, balance: 150.00, status: 'Recommended' }
-  ];
+  userData = { name: '', email: '' };
+  cardInput = { number: '', expiry: '', cvv: '' };
+
+  recommendedCard: PaymentMethod | null = null;
+  transactionAmount = 10.00;
 
   ngOnInit() {
-    // Initial delay to simulate "loading" when plugin opened
+    this.checkLocalStorage();
+  }
+
+  checkLocalStorage() {
+    const saved = localStorage.getItem('vortix_user_data');
+    if (saved) {
+      const data = JSON.parse(saved);
+      this.userData = data;
+      if (data.card) {
+        this.currentView = 'main';
+        this.recommendedCard = data.card;
+      } else {
+        this.currentView = 'cardEntry';
+      }
+    }
   }
 
   togglePlugin() {
     this.isOpen = !this.isOpen;
-    if (this.isOpen && this.scanning) {
-      setTimeout(() => this.analyzeAndDecide(), 2500);
+    if (this.isOpen && this.currentView === 'onboarding') {
+      // Stay on onboarding
     }
   }
 
-  analyzeAndDecide() {
-    this.scanning = false;
-    const validCards = this.mockCards.filter(c => c.status !== 'Insufficient Funds' && c.balance >= this.transactionAmount);
-    if (validCards.length > 0) {
-      this.recommendedCard = validCards.sort((a, b) => b.successRate - a.successRate)[0];
+  goToCardEntry() {
+    if (this.userData.name && this.userData.email) {
+      this.saveToStorage();
+      this.currentView = 'cardEntry';
     }
   }
 
-  getDotClass(card: PaymentMethod) {
-    if (card.status === 'Recommended') return 'green';
-    if (card.status === 'Stable') return 'yellow';
-    if (card.status === 'Congested') return 'red';
-    return '';
+  tokenizeAndSave() {
+    if (this.cardInput.number.length > 4) {
+      const card: PaymentMethod = {
+        id: 'tokenized',
+        name: 'Visa', // Mock detection
+        last4: this.cardInput.number.slice(-4),
+        icon: 'VISA',
+        trafficLevel: 'Low',
+        successRate: 98,
+        balance: 1250,
+        status: 'Recommended'
+      };
+      this.recommendedCard = card;
+      (this.userData as any).card = card;
+      this.saveToStorage();
+      this.startScanning();
+    }
+  }
+
+  startScanning() {
+    this.currentView = 'scanning';
+    setTimeout(() => {
+      this.currentView = 'main';
+    }, 2000);
+  }
+
+  saveToStorage() {
+    localStorage.setItem('vortix_user_data', JSON.stringify(this.userData));
   }
 }
