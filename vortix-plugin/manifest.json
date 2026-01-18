@@ -1,0 +1,28 @@
+{
+    "manifest_version": 3,
+    "name": "VORTIX AI Payment Assistant",
+    "version": "1.0",
+    "description": "AI-powered payment route optimization and balance comparison.",
+    "permissions": [
+        "activeTab",
+        "storage"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "*://localhost/*",
+                "https://www.paypal.com/*",
+                "https://www.sandbox.paypal.com/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "css": [
+                "styles.css"
+            ]
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    }
+}
